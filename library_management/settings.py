@@ -22,7 +22,7 @@ SECRET_KEY = 'django-insecure-$r7xtyj&%45jv0huz=aftct(e8w1p0h5euyua5ee#z@@9)pe*f
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['127.0.0.1', 'localhost']  # ✅ Updated for local development
+ALLOWED_HOSTS = ['127.0.0.1', 'localhost' , 'testserver']  # ✅ Updated for local development
 
 
 # Application definition
@@ -124,3 +124,10 @@ CSRF_TRUSTED_ORIGINS = [
 
 # ✅ Default primary key field type
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+
+SESSION_ENGINE = 'django.contrib.sessions.backends.db'  # ✅ Database session use karein
+SESSION_COOKIE_AGE = 86400  # ✅ 1 din ke liye session valid rahega
+SESSION_SAVE_EVERY_REQUEST = True  # ✅ Har request pe session save hoga
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False  # ✅ Browser close hone par session delete nahi hoga
+SESSION_COOKIE_SECURE = False 

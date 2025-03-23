@@ -35,8 +35,12 @@ def book_list_view(request):
 
 
 # ✅ Home Page View
+@login_required
 def home_view(request):
-    return render(request, 'library/home.html')
+    print("✅ DEBUG: home_view() function executed")  # ✅ Check if this line prints
+    print(f"✅ DEBUG: User in Home View = {request.user}")  # ✅ Check if user is logged in
+
+    return render(request, 'library/home.html', {"user": request.user})  # ✅ Ensure this is rendering HTML
 
 
 # ✅ Student Books View
@@ -76,20 +80,30 @@ class AdminLoginView(APIView):
         email = request.data.get("email")
         password = request.data.get("password")
 
+        print(f"🔍 DEBUG: Email = {email}, Password = {'*' * len(password) if password else 'None'}")  # Debug input
+
         if not email or not password:
-            return redirect('admin_login')  # ✅ Redirect to login if fields are empty
+            print("❌ DEBUG: Email or password missing")
+            return Response({"error": "Email and password required"}, status=400)
 
-        user = authenticate(email=email, password=password)
 
-        if user:
-            login(request, user)
-            refresh = RefreshToken.for_user(user)
+        user = authenticate(username=email, password=password)
+        print(f"🔍 DEBUG: Authenticated User = {user}")  # Debug authentication
 
-            response = redirect('home')  # ✅ Redirect to home page
-            response.set_cookie("access_token", str(refresh.access_token))  # ✅ Store token in cookie
-            return response
+        if user is None:
+            print("❌ DEBUG: Invalid credentials")
+            return Response({"error": "Invalid credentials"}, status=401)
 
-        return redirect('admin_login')  # ✅ Redirect back to login on failure
+        login(request, user)
+        print(f"✅ DEBUG: User logged in, Session Key = {request.session.session_key}")
+
+        # ✅ Ensure session is saved
+        request.session['user_id'] = user.id
+        request.session.modified = True
+
+        response = Response({"message": "Login successful", "redirect_url": "/home/"}, status=200)
+        response.set_cookie("sessionid", request.session.session_key)  # ✅ Set session cookie
+        return response  # ✅ Return proper response
 
 
 # ✅ CRUD for Books (Admin Only)
