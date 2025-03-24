@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📚 Book List | Library Management</title>
+
+    <!-- ✅ Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- ✅ Font Awesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+    <!-- ✅ Custom CSS -->
+    <style>
+        body { background: #f4f4f4; }
+        .navbar { background: linear-gradient(135deg, #4b6cb7, #182848); }
+        .navbar-brand { font-size: 1.5rem; font-weight: bold; }
+        .book-card { transition: transform 0.2s, box-shadow 0.3s; }
+        .book-card:hover { transform: scale(1.05); box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2); }
+        .badge { font-size: 0.9rem; padding: 5px 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- ✅ Navbar with Logout -->
+    <nav class="navbar navbar-dark">
+        <div class="container d-flex justify-content-between">
+            <a class="navbar-brand text-white" href="/">📚 Library Management</a>
+            <button id="logoutBtn" class="btn btn-danger">Logout</button>
+        </div>
+    </nav>
+
+    <!-- ✅ Main Content -->
+    <div class="container mt-4">
+        <h1 class="text-center mb-4">📖 Available Books</h1>
+
+        <!-- ✅ Search Bar -->
+        <div class="mb-4">
+            <input type="text" id="searchBar" class="form-control" placeholder="🔍 Search books by title or author...">
+        </div>
+
+        <!-- ✅ Add Book Form -->
+        <div class="card p-3 mb-4">
+            <h3>Add a New Book</h3>
+            <form id="addBookForm">
+                <div class="row">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="title" placeholder="Title" required>
+                    </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" id="author" placeholder="Author" required>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="date" class="form-control" id="published_date" required>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="text" class="form-control" id="isbn" placeholder="ISBN" required>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-primary">Add Book</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- ✅ Book List -->
+        <div class="row" id="book-list">
+            {% for book in books %}
+            <div class="col-md-4 mb-4 book-card" data-title="{{ book.title|lower }}" data-author="{{ book.author|lower }}">
+                <div class="card shadow-sm">
+                    <div class="card-body">
+                        <h5 class="card-title text-primary">
+                            <i class="fa-solid fa-book"></i> {{ book.title }}
+                        </h5>
+                        <h6 class="card-subtitle mb-2 text-muted">
+                            <i class="fa-solid fa-user"></i> {{ book.author }}
+                        </h6>
+                        <p class="card-text">
+                            <i class="fa-solid fa-calendar-days"></i> Published: {{ book.published_date }}
+                        </p>
+                        <p class="card-text">
+                            <span class="badge {% if book.available %}bg-success{% else %}bg-danger{% endif %}">
+                                {% if book.available %}✅ Available{% else %}❌ Checked Out{% endif %}
+                            </span>
+                        </p>
+                        <button class="btn btn-warning btn-sm update-book" data-id="{{ book.id }}">
+                            <i class="fa-solid fa-pen-to-square"></i> Update
+                        </button>
+                        <button class="btn btn-danger btn-sm delete-book" data-id="{{ book.id }}">
+                            <i class="fa-solid fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <h3 class="text-center text-danger">🚫 No books available.</h3>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- ✅ jQuery & Bootstrap JS -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        let accessToken = localStorage.getItem("accessToken");
+
+        if (!accessToken) {
+            alert("Please log in first.");
+            window.location.href = "/admin-login/";
+        }
+
+        function getCSRFToken() {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== "") {
+                let cookies = document.cookie.split(";");
+                for (let i = 0; i < cookies.length; i++) {
+                    let cookie = cookies[i].trim();
+                    if (cookie.startsWith("csrftoken=")) {
+                        cookieValue = cookie.substring(10);
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        // ✅ Add Book
+        $("#addBookForm").submit(function(event) {
+            event.preventDefault();
+            let bookData = {
+                title: $("#title").val(),
+                author: $("#author").val(),
+                published_date: $("#published_date").val(),
+                isbn: $("#isbn").val(),
+                available: true
+            };
+
+            $.ajax({
+                url: "/api/books/",
+                type: "POST",
+                contentType: "application/json",
+                data: JSON.stringify(bookData),
+                headers: {
+                    "X-CSRFToken": getCSRFToken(),
+                    "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQyNzI3MDAwLCJpYXQiOjE3NDI3MjY3MDAsImp0aSI6IjkyNGViYWE2MDczMjQ4ZTE4ODJjMjEzZjUxNDY0MDhiIiwidXNlcl9pZCI6MX0.KLXRMkmRsUXMpBO-oq7BJsO6H6MizvhhykZTHv7cn-s"
+                },
+                success: function() {
+                    alert("Book added successfully!");
+                    location.reload();
+                },
+                error: function(xhr) {
+                    alert("Failed to add book: " + xhr.responseText);
+                }
+            });
+        });
+
+        // ✅ Delete Book
+        $(".delete-book").click(function() {
+    let bookId = $(this).data("id");
+
+    $.ajax({
+        url: `/api/books/${bookId}/`,
+        type: "DELETE",
+        headers: {
+            "Authorization": "Bearer " + localStorage.getItem("accessToken"),
+            "X-CSRFToken": getCSRFToken()
+        },
+        success: function() {
+            alert("Book deleted successfully!");
+            location.reload();
+        },
+        error: function(xhr) {
+            alert("Failed to delete book: " + xhr.responseText);
+        }
+    });
+});
+
+
+        // ✅ Update Book
+        $(".update-book").click(function() {
+            let bookId = $(this).data("id");
+            let newTitle = prompt("Enter new title:");
+
+            if (newTitle) {
+                $.ajax({
+                    url: `/api/books/${bookId}/`,
+                    type: "PATCH",
+                    contentType: "application/json",
+                    data: JSON.stringify({ title: newTitle }),
+                    headers: {
+                        "X-CSRFToken": getCSRFToken(),
+                        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ0b2tlbl90eXBlIjoiYWNjZXNzIiwiZXhwIjoxNzQyNzI3MDAwLCJpYXQiOjE3NDI3MjY3MDAsImp0aSI6IjkyNGViYWE2MDczMjQ4ZTE4ODJjMjEzZjUxNDY0MDhiIiwidXNlcl9pZCI6MX0.KLXRMkmRsUXMpBO-oq7BJsO6H6MizvhhykZTHv7cn-s"
+                    },
+                    success: function() {
+                        alert("Book updated successfully!");
+                        location.reload();
+                    }
+                });
+            }
+        });
+
+        // ✅ Logout
+        $("#logoutBtn").click(function() {
+            localStorage.removeItem("accessToken");
+            alert("Logged out successfully!");
+            window.location.href = "/admin-login/";
+        });
+    </script>
+</body>
+</html>
